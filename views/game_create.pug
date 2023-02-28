@@ -1,0 +1,24 @@
+extends layout
+block content
+    h1= title
+    
+    form(action="", method="post")
+        div#players
+            if players
+                each player, i in players
+                    .form-group 
+                        label(for=("player" + (i + 1))) Player #{i + 1}:  
+                        input.form-control(id=("player" + (i + 1)), name="players", type='text', placeholder=('player ' + (i + 1) + ' name'), value=(player.name))
+            else
+                .form-group 
+                        label(for="player1") Player 1:  
+                        input.form-control(id=("player1"), name="players", type='text', placeholder=('player 1 name'))
+
+        button.btn.btn-primary(type='button',onClick="addPlayer()") Add Player
+        button.btn.btn-primary(type='submit', style='margin: 5px') Submit
+
+        if errors 
+            ul 
+                each error in errors
+                    li!= error.msg
+    script(src="/javascripts/addPlayer.js")
