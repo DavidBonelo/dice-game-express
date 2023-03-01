@@ -1,0 +1,26 @@
+extends layout
+block content
+    h1= title 
+    hr
+    h4 #[strong Game id:] #{game._id}
+    p #[strong Created at:] #{game.creationDate}
+    p #[strong Status:] #{game.inProgress ? 'In progress' : 'Finished'}
+    p #[strong Players:]
+    ul
+        each val, index in game.gamers
+            li #{val.name}
+    if game.winner
+        h4.text-success #[strong WINNER:] #{game.winner.name}
+    else
+        form(action="/startGame" method="POST")
+            input(id=game._id, type="hidden", name="gameid", value=game._id)
+            each player, i in game.gamers
+                .form-group.form-inline 
+                    label(for= player._id) Player #{player.name} dice: 
+                    input.form-control(id= player._id, name="rolls", type='number', value= rolls ? rolls[i] : '', min='1', max='6', style= 'margin: 5px')
+                    button.btn.btn-primary(type='button', onClick='rollDice("' + player._id + '")') Roll the dice!
+            button.btn.btn-primary(type='submit') Submit
+
+        script(src="/javascripts/rollDice.js")
+
+        //- a(href="/game/" + game._id + '/startGame') Start game
