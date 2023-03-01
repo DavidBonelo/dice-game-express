@@ -1,0 +1,20 @@
+extends layout
+block content
+    h1= title 
+    hr
+    if games
+        each game in games
+            h4 Game id: 
+                a(href=game.url)= game._id
+            p #[strong Created at:] #{game.creationDate}
+            p #[strong Status:] #{game.inProgress ? 'In progress' : 'Finished'}
+            if game.winner
+                p.text-success #[strong WINNER:] #{game.winner.name}
+            else
+                p Players:
+                ul
+                    each player in game.gamers
+                        li= player.name
+    else
+        h4
+            a(href="/createGame") Create a new game

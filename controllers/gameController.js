@@ -156,13 +156,39 @@ exports.startGame = [
 ]
 
 exports.winner = (req, res, next) => {
-
+  const id = new mongoose.Types.ObjectId(req.params.id);
+  Game.findById(id).populate('gamers').populate('winner').exec((err, game) => {
+    if (err) next(err);
+    if (game == null) res.redirect('/')
+    res.render('game_detail', {
+      title: 'Game details',
+      game: game
+    })
+  });
 }
 
 exports.gameList = (req, res, next) => {
+  Game.find({}).populate('gamers').populate('winner')
+    .sort([['inProgress', 'descending'], ['creationDate', 'descending']])
+    .exec((err, games) => {
+      if (err) next(err);
+
+      res.render('game_list', {
+        title: 'Games history: ',
+        games: games.length < 1 ? null : games
+      })
+    });
 
 }
 
 exports.playerList = (req, res, next) => {
+  Player.find({}).sort([['gamesWon', 'descending']]).exec((err, players) => {
+    if (err) next(err);
+
+    res.render('player_list', {
+      title: 'List of players',
+      players: players.length < 1 ? null : players
+    })
+  });
 
 }

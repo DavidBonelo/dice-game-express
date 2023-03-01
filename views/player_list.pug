@@ -1,0 +1,12 @@
+extends layout
+block content
+    h1= title 
+    hr
+    if players
+        each player in players
+            h4 #{player.name}
+            p #[strong id:] #{player._id}
+            p #[strong Games won:] #{player.gamesWon}
+    else
+        h4
+            a(href="/createGame") Create a new game
