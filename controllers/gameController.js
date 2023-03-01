@@ -1,8 +1,12 @@
 const Game = require('../models/game');
 const Player = require('../models/player');
+const mongoose = require('mongoose');
+const { body, validationResult } = require("express-validator");
+const async = require('async');
 
+// render the lobby view with the list of games in progress
 exports.lobby = function (req, res, next) {
-  
+
   Game.find({ inProgress: true })
     .populate("gamers")
     .then((games) => {
@@ -13,13 +17,14 @@ exports.lobby = function (req, res, next) {
     }).catch((err) => console.log(err));
 }
 
+// render the create game view
 exports.createGameGet = (req, res, next) => {
   res.render('game_create', {
     title: 'New game'
   });
 }
 
-
+// validate input, create game and players in the db and render the game detail view
 exports.createGamePost = [
   // Convert the players to an array.
   (req, res, next) => {
@@ -39,7 +44,7 @@ exports.createGamePost = [
   (req, res, next) => {
     // Extract the validation errors from a request.
     const errors = validationResult(req);
-
+    // re-render the form if input contains errors
     if (!errors.isEmpty()) {
       res.render('game_create', {
         title: 'New game',
@@ -48,8 +53,8 @@ exports.createGamePost = [
       })
     } else {
       // continue after validation found no errors
-
       let players = [];
+      // syncronusly create or use players if already exists
       async.eachSeries(
         req.body.players, async (player) => {
           const foundPlayer = await Player.findOne({ name: player })
@@ -69,7 +74,6 @@ exports.createGamePost = [
             console.log(err);
             next(err);
           }
-
           // create and save the new game into the db
           const game = new Game({
             inProgress: true,
@@ -82,7 +86,7 @@ exports.createGamePost = [
     }
   }
 ]
-
+// find the game and render game_detail view
 exports.gameDetail = (req, res, next) => {
   Game.findById(req.params.id).populate('gamers').populate('winner').exec((err, game) => {
     if (!game) {
@@ -96,8 +100,6 @@ exports.gameDetail = (req, res, next) => {
     }
   });
 }
-
-
 
 exports.startGame = [
   // Convert the rolls to an array.
@@ -121,13 +123,14 @@ exports.startGame = [
     .trim()
     .escape()
     .isMongoId(),
-
+  // Process request after validation and sanitization.
   (req, res, next) => {
+    // Extract the validation errors from a request.
     const errors = validationResult(req);
 
     Game.findById(req.body.gameid).populate('gamers').exec((err, game) => {
       if (err) next(err);
-
+      // check if input has errors, or the game has already finalized or the game wasn't found
       if (!errors.isEmpty() || !game.inProgress || game == null) {
         res.render('game_detail', {
           title: 'Game details',
@@ -135,18 +138,17 @@ exports.startGame = [
           rolls: req.body.rolls
         });
       } else {
-
+        // continue after validation found no errors
         const maxRoll = Math.max(...req.body.rolls).toString();
         const winnerIndex = req.body.rolls.indexOf(maxRoll);
         const winner = game.gamers[winnerIndex];
-
+        // update game status and winner
         game.winner = winner._id;
         game.inProgress = false;
         game.save();
-
+        // update player gamesWon
         Player.findByIdAndUpdate(winner._id, { gamesWon: winner.gamesWon + 1 }, {})
-          .then(a => console.log('a', a))
-          .catch(b => console.log('b', b));
+          .catch(err => console.log('player update error', err));
 
         res.redirect(game.url + '/winner');
 
@@ -154,7 +156,7 @@ exports.startGame = [
     })
   }
 ]
-
+// same as gameDetail (:
 exports.winner = (req, res, next) => {
   const id = new mongoose.Types.ObjectId(req.params.id);
   Game.findById(id).populate('gamers').populate('winner').exec((err, game) => {
@@ -166,7 +168,7 @@ exports.winner = (req, res, next) => {
     })
   });
 }
-
+// get all the games, sort them and render game_list
 exports.gameList = (req, res, next) => {
   Game.find({}).populate('gamers').populate('winner')
     .sort([['inProgress', 'descending'], ['creationDate', 'descending']])
@@ -180,7 +182,7 @@ exports.gameList = (req, res, next) => {
     });
 
 }
-
+// get all the players, sort them and render game_list
 exports.playerList = (req, res, next) => {
   Player.find({}).sort([['gamesWon', 'descending']]).exec((err, players) => {
     if (err) next(err);

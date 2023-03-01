@@ -11,6 +11,8 @@ var app = express();
 // database conncection
 const mongoose = require('mongoose');
 mongoose.set('strictQuery', false);
+
+// const mongoDB = "mongodb+srv://kay:myRealPassword@cluster0.mongodb.net/dice_game?ssl=true&authSource=admin&w=majority";
 const mongoDB = "mongodb://127.0.0.1:27017/dice_game";
 
 main().catch(err => console.log(err));
