@@ -98,9 +98,62 @@ exports.gameDetail = (req, res, next) => {
 }
 
 
-exports.startGame = (req, res, next) => {
 
-}
+exports.startGame = [
+  // Convert the rolls to an array.
+  (req, res, next) => {
+    if (!Array.isArray(req.body.rolls)) {
+      req.body.rolls =
+        typeof req.body.rolls === "undefined" ? [] : [req.body.rolls];
+    }
+    next();
+  },
+  // Validate and sanitize fields.
+  body("rolls.*")
+    .trim()
+    .isNumeric()
+    .escape()
+    .withMessage("Player roll must be numeric, and not empty.")
+    .isInt({ min: 1, max: 6 })
+    .withMessage("Roll value invalid (must be between 1 and 6)"),
+
+  body("gameid", "Invalid gameid")
+    .trim()
+    .escape()
+    .isMongoId(),
+
+  (req, res, next) => {
+    const errors = validationResult(req);
+
+    Game.findById(req.body.gameid).populate('gamers').exec((err, game) => {
+      if (err) next(err);
+
+      if (!errors.isEmpty() || !game.inProgress || game == null) {
+        res.render('game_detail', {
+          title: 'Game details',
+          game: game,
+          rolls: req.body.rolls
+        });
+      } else {
+
+        const maxRoll = Math.max(...req.body.rolls).toString();
+        const winnerIndex = req.body.rolls.indexOf(maxRoll);
+        const winner = game.gamers[winnerIndex];
+
+        game.winner = winner._id;
+        game.inProgress = false;
+        game.save();
+
+        Player.findByIdAndUpdate(winner._id, { gamesWon: winner.gamesWon + 1 }, {})
+          .then(a => console.log('a', a))
+          .catch(b => console.log('b', b));
+
+        res.redirect(game.url + '/winner');
+
+      }
+    })
+  }
+]
 
 exports.winner = (req, res, next) => {
 
